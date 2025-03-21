@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { State, states } from './states';
 
@@ -20,7 +21,12 @@ export class DynamicCheckboxComponent {
   );
 
   constructor() {
-    this.selectAll.valueChanges.subscribe(checked => this.toggleAll(checked));
+    this.selectAll.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(checked => this.toggleAll(checked));
+    this.form.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.updateSelectAll());
   }
 
   get selectedValues() {
@@ -32,5 +38,12 @@ export class DynamicCheckboxComponent {
     controlsArray.forEach(key => {
       this.form.get(key)?.setValue(checked, { emitEvent: false });
     });
+  }
+
+  private updateSelectAll() {
+    const allChecked = Object.values(this.form.value).every(value => value === true);
+    if (this.selectAll.value !== allChecked) {
+      this.selectAll.setValue(allChecked, { emitEvent: false });
+    }
   }
 }
